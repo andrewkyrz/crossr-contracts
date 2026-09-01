@@ -1,0 +1,48 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib", "node_modules"]
+test = "test"
+script = "script"
+solc_version = "0.8.26"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 44444444
+via_ir = true
+fs_permissions = [{ access = "read-write", path = "./" }]
+ffi = false
+gas_reports = ["Launchpad", "LaunchToken", "TokenBridge", "LiquidityLocker"]
+
+remappings = [
+  "forge-std/=lib/forge-std/src/",
+  "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+  "solady/=node_modules/solady/src/",
+  "@uniswap/v4-core/=node_modules/@uniswap/v4-core/",
+  "@uniswap/v4-periphery/=node_modules/@uniswap/v4-periphery/",
+  "@layerzerolabs/oapp-evm/=node_modules/@layerzerolabs/oapp-evm/",
+  "@layerzerolabs/lz-evm-protocol-v2/=node_modules/@layerzerolabs/lz-evm-protocol-v2/",
+  "@layerzerolabs/lz-evm-messagelib-v2/=node_modules/@layerzerolabs/lz-evm-messagelib-v2/",
+  "solidity-bytes-utils/=node_modules/solidity-bytes-utils/",
+  "@layerzerolabs/test-devtools-evm-foundry/=node_modules/@layerzerolabs/test-devtools-evm-foundry/",
+  "@layerzerolabs/lz-evm-v1-0.7/=node_modules/@layerzerolabs/lz-evm-v1-0.7/",
+  "@layerzerolabs/oft-evm/=node_modules/@layerzerolabs/oft-evm/",
+]
+
+[profile.ci]
+fuzz = { runs = 2000 }
+
+[rpc_endpoints]
+robinhood = "${ROBINHOOD_RPC_URL}"
+robinhood_testnet = "https://rpc.testnet.chain.robinhood.com"
+bsc = "${BSC_RPC_URL}"
+bsc_testnet = "https://data-seed-prebsc-1-s1.binance.org:8545"
+base = "${BASE_RPC_URL}"
+base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
+arbitrum_sepolia = "${ARBITRUM_SEPOLIA_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
+
+[fmt]
+line_length = 110
+tab_width = 4
+bracket_spacing = false

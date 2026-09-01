@@ -1,0 +1,25 @@
+{
+  "name": "crossr-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test",
+    "fmt": "forge fmt"
+  },
+  "dependencies": {
+    "@layerzerolabs/lz-evm-messagelib-v2": "^3.0.168",
+    "@layerzerolabs/lz-evm-protocol-v2": "^3.0.168",
+    "@layerzerolabs/oapp-evm": "^0.4.1",
+    "@openzeppelin/contracts": "^5.6.1",
+    "@uniswap/v4-core": "^1.0.2",
+    "@uniswap/v4-periphery": "^1.0.3",
+    "solady": "^0.1.26",
+    "solidity-bytes-utils": "^0.8.4"
+  },
+  "devDependencies": {
+    "@layerzerolabs/lz-evm-v1-0.7": "^3.0.168",
+    "@layerzerolabs/oft-evm": "^4.0.1",
+    "@layerzerolabs/test-devtools-evm-foundry": "^8.0.1"
+  }
+}

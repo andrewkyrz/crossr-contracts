@@ -17,6 +17,14 @@ script/                    Deploy, DeployLocal, Wire, SetQuote, Simulate, Chains
 test/                      unit / fuzz / cross-chain tests against a real v4 PoolManager
 ```
 
+## Documentation
+
+- [docs/architecture.md](docs/architecture.md) — contract map, manifest, launch / trade / bridge flows, fees, trust model
+- [docs/testing.md](docs/testing.md) — test layout, the two cross-chain suites, conventions
+- [docs/local-development.md](docs/local-development.md) — anvil stack, `Simulate.s.sol`, common problems
+- [docs/glossary.md](docs/glossary.md) — curve and LayerZero terms
+- [CONTRIBUTING.md](CONTRIBUTING.md) — workflow, commit style, PR checklist, security disclosure
+
 ## How it works
 
 **Manifest.** A launch is a `Manifest` — creator, nonce, name, symbol, metadata URI, creator tax, snipe-exempt

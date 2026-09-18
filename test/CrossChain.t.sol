@@ -162,34 +162,35 @@ contract CrossChainTest is LaunchpadTestBase {
         vm.warp(block.timestamp + 10);
         vm.prank(alice);
         uint256 bought = a.pad.buy{value: 1 ether}(tokenA, 1 ether, 0, alice, block.timestamp);
+        uint256 half = bridgeA.removeDust(bought / 2); // bridged amounts are multiples of 1e9 wei
 
         bytes memory opts = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
-        MessagingFee memory fee = bridgeA.quoteSend(EID_B, tokenA, bob, bought / 2, opts);
+        MessagingFee memory fee = bridgeA.quoteSend(EID_B, tokenA, _b32(bob), bought / 2, opts);
         uint256 supplyA = LaunchToken(tokenA).totalSupply();
         vm.prank(alice);
-        bridgeA.send{value: fee.nativeFee}(EID_B, tokenA, bob, bought / 2, opts);
-        assertEq(LaunchToken(tokenA).balanceOf(alice), bought - bought / 2);
-        assertEq(LaunchToken(tokenA).totalSupply(), supplyA - bought / 2, "burned on A");
+        bridgeA.send{value: fee.nativeFee}(EID_B, tokenA, _b32(bob), bought / 2, opts);
+        assertEq(LaunchToken(tokenA).balanceOf(alice), bought - half);
+        assertEq(LaunchToken(tokenA).totalSupply(), supplyA - half, "burned on A");
 
         vm.chainId(CHAIN_B);
         uint256 supplyB = LaunchToken(tokenB).totalSupply();
         lz.deliverNext();
-        assertEq(LaunchToken(tokenB).balanceOf(bob), bought / 2, "minted on B");
-        assertEq(LaunchToken(tokenB).totalSupply(), supplyB + bought / 2);
+        assertEq(LaunchToken(tokenB).balanceOf(bob), half, "minted on B");
+        assertEq(LaunchToken(tokenB).totalSupply(), supplyB + half);
         // global supply conserved
         assertEq(LaunchToken(tokenA).totalSupply() + LaunchToken(tokenB).totalSupply(), SUPPLY);
 
         // bridged tokens can be sold into B's curve only up to what B has sold: nothing yet
         vm.startPrank(bob);
-        LaunchToken(tokenB).approve(address(b.pad), bought / 2);
+        LaunchToken(tokenB).approve(address(b.pad), half);
         vm.expectRevert(Launchpad.InsufficientSold.selector);
-        b.pad.sell(tokenB, bought / 2, 0, bob, block.timestamp);
+        b.pad.sell(tokenB, half, 0, bob, block.timestamp);
         vm.stopPrank();
 
         // after someone buys on B, arbitrage sells are possible
         vm.prank(alice);
         uint256 boughtB = b.pad.buy{value: 1 ether}(tokenB, 1 ether, 0, alice, block.timestamp + 100);
-        uint256 sellAmt = boughtB < bought / 2 ? boughtB : bought / 2;
+        uint256 sellAmt = boughtB < half ? boughtB : half;
         vm.prank(bob);
         uint256 got = b.pad.sell(tokenB, sellAmt, 0, bob, block.timestamp + 100);
         assertGt(got, 0);
@@ -200,7 +201,7 @@ contract CrossChainTest is LaunchpadTestBase {
         bytes memory opts = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
         vm.prank(alice);
         vm.expectRevert(TokenBridge.NotLaunchToken.selector);
-        bridgeA.send{value: 0.001 ether}(EID_B, address(0xBEEF), bob, 1, opts);
+        bridgeA.send{value: 0.001 ether}(EID_B, address(0xBEEF), _b32(bob), 1, opts);
     }
 
     function test_bridge_receiveRevertsUntilLegExists() public {
@@ -216,7 +217,7 @@ contract CrossChainTest is LaunchpadTestBase {
         uint256 bought = a.pad.buy{value: 1 ether}(tokenA, 1 ether, 0, alice, block.timestamp);
         bytes memory opts = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
         vm.prank(alice);
-        bridgeA.send{value: 0.001 ether}(EID_B, tokenA, bob, bought, opts);
+        bridgeA.send{value: 0.001 ether}(EID_B, tokenA, _b32(bob), bought, opts);
 
         vm.chainId(CHAIN_B);
         vm.expectRevert(TokenBridge.NotLaunchToken.selector);
@@ -233,7 +234,7 @@ contract CrossChainTest is LaunchpadTestBase {
         bytes memory opts = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
         vm.prank(alice);
         vm.expectRevert();
-        bridgeA.send{value: 0.001 ether}(EID_B, tokenA, bob, bought, opts);
+        bridgeA.send{value: 0.001 ether}(EID_B, tokenA, _b32(bob), bought, opts);
     }
 
     function test_token_onlyBridgeCanMint() public {

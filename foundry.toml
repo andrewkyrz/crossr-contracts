@@ -39,8 +39,26 @@ bsc_testnet = "https://data-seed-prebsc-1-s1.binance.org:8545"
 base = "${BASE_RPC_URL}"
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
+optimism = "${OPTIMISM_RPC_URL}"
 arbitrum_sepolia = "${ARBITRUM_SEPOLIA_RPC_URL}"
 sepolia = "${SEPOLIA_RPC_URL}"
+optimism_sepolia = "${OPTIMISM_SEPOLIA_RPC_URL}"
+
+# Source verification: `--verify` picks the entry matching the chain id. Etherscan-family explorers share one
+# Etherscan V2 key (ETHERSCAN_API_KEY covers Base, Arbitrum, Optimism, BNB, Ethereum + their testnets); Robinhood Chain
+# uses Blockscout (no key). Alternatively pass --verifier blockscout --verifier-url <explorer>/api on the command line.
+[etherscan]
+robinhood = { key = "", chain = 4663, url = "https://robinhoodchain.blockscout.com/api" }
+robinhood_testnet = { key = "", chain = 46630, url = "https://explorer.testnet.chain.robinhood.com/api" }
+base = { key = "${ETHERSCAN_API_KEY}", chain = 8453 }
+arbitrum = { key = "${ETHERSCAN_API_KEY}", chain = 42161 }
+optimism = { key = "${ETHERSCAN_API_KEY}", chain = 10 }
+bsc = { key = "${ETHERSCAN_API_KEY}", chain = 56 }
+mainnet = { key = "${ETHERSCAN_API_KEY}", chain = 1 }
+base_sepolia = { key = "${ETHERSCAN_API_KEY}", chain = 84532 }
+arbitrum_sepolia = { key = "${ETHERSCAN_API_KEY}", chain = 421614 }
+optimism_sepolia = { key = "${ETHERSCAN_API_KEY}", chain = 11155420 }
+sepolia = { key = "${ETHERSCAN_API_KEY}", chain = 11155111 }
 
 [fmt]
 line_length = 110

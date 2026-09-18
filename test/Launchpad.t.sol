@@ -359,6 +359,20 @@ contract LaunchpadTest is LaunchpadTestBase {
         s.pad.graduate(token);
     }
 
+    function test_graduation_crossingBuyRequiresGraduationGas() public {
+        address token = createNative(s, m, 0);
+        vm.warp(block.timestamp + 10);
+        // a gas limit that covers the buy but not the pool creation must revert instead of leaving the curve pending
+        vm.prank(alice);
+        vm.expectRevert(Launchpad.InsufficientGas.selector);
+        s.pad.buy{value: 10 ether, gas: 500_000}(token, 10 ether, 0, alice, block.timestamp);
+        assertEq(uint8(s.pad.getCurve(token).status), uint8(LaunchTypes.Status.Active));
+        // with the headroom the same buy graduates inline
+        vm.prank(alice);
+        s.pad.buy{value: 10 ether, gas: 1_500_000}(token, 10 ether, 0, alice, block.timestamp);
+        assertEq(uint8(s.pad.getCurve(token).status), uint8(LaunchTypes.Status.Graduated));
+    }
+
     function test_graduation_manualAfterAutoFailure() public {
         address token = createNative(s, m, 0);
         vm.warp(block.timestamp + 10);

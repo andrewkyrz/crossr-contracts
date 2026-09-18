@@ -13,7 +13,8 @@ src/LaunchHook.sol         v4 hook: gated pool init, afterSwap fee + creator tax
 src/FeeEscrow.sol          claim-based fee accounting
 src/bridge/TokenBridge.sol LayerZero V2 OApp: burn on source, mint on destination
 src/bridge/LaunchRelay.sol LayerZero V2 OApp: replicate a launch to peer chains
-script/                    Deploy, DeployLocal, Wire, SetQuote, Simulate, Chains registry
+script/                    Deploy, DeployBridge, DeployLocal, DeployPoolManager, DeployMockQuote, Wire, SetQuote,
+                           SetDvn, Handover, Simulate; Chains + LzConfig registries
 test/                      unit / fuzz / cross-chain tests against a real v4 PoolManager
 ```
 
@@ -102,9 +103,12 @@ contract (Ownable2Step).
 
 - [ ] Independent audit of `src` (curve accounting, hook delta handling, bridge mint authority).
 - [ ] `OWNER` = multisig behind a timelock on every chain; accept ownership on all contracts.
-- [ ] LayerZero: after `Wire.s.sol`, set explicit DVN configs (2-of-2, e.g. LayerZero Labs + Nethermind) with
+- [x] LayerZero: after `Wire.s.sol`, `SetDvn.s.sol` pins SendUln302 / ReceiveUln302 and a required 2-of-2 of
+      LayerZero Labs + Nethermind per peer (addresses in `script/LzConfig.sol`); run it before `Handover.s.sol`
+      (only the OApp delegate, the deployer until handover, may call `setConfig`). Previously:
       `endpoint.setConfig` for both `TokenBridge` and `LaunchRelay`; the default config is a single DVN.
 - [ ] Verify sources on Blockscout / BscScan; publish the hook address (its low 14 bits encode its permissions).
 - [ ] Set per-chain quote configs so every leg opens at roughly the same USD price (BNB defaults in `Chains.sol` assume
       ~$600/BNB vs ~$2.5k/ETH — adjust to market before launch).
-- [ ] Decide ERC20 quotes (e.g. CAKE on BNB) and enable them with `SetQuote.s.sol` + `PEER_QUOTES_<id>`.
+- [ ] Decide ERC20 quotes (Robinhood stock tokens, USDC, CAKE on BNB) and enable them with `SetQuote.s.sol`
+      (`QUOTES=addr:phantom:target,…`, `REMOTE_CHAIN` + `REMOTE_QUOTES` for relayed legs).

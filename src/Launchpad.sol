@@ -43,6 +43,7 @@ contract Launchpad is ILaunchpad, Ownable2Step, Pausable, ReentrancyGuard {
     error InsufficientSold();
     error InvalidBps();
     error UnknownToken();
+    error InsufficientGas();
 
     // ───────────────────────────── events ─────────────────────────────
     event LaunchManifest(bytes32 indexed launchId, bytes manifest);
@@ -92,6 +93,8 @@ contract Launchpad is ILaunchpad, Ownable2Step, Pausable, ReentrancyGuard {
 
     uint256 public constant TOTAL_SUPPLY = 1_000_000_000e18;
     uint256 public constant MAX_LEGS = 8;
+    /// @dev Gas a crossing buy must still have for the pool creation inside selfGraduate (measured ~520k on v4).
+    uint256 public constant GRADUATION_GAS = 800_000;
     uint256 public constant MAX_SNIPE_EXEMPT = 16;
     uint16 public constant MAX_CREATOR_TAX_BPS = 1_000;
 
@@ -385,6 +388,11 @@ contract Launchpad is ILaunchpad, Ownable2Step, Pausable, ReentrancyGuard {
         if (tokensOut == sellable) {
             c.status = LaunchTypes.Status.PendingGraduation;
             emit ReadyToGraduate(token);
+            // eth_estimateGas returns the smallest gas at which the outer call succeeds, and an out-of-gas
+            // inside the try below is swallowed, so estimates would land just under what graduation needs and
+            // every crossing buy sent with an estimated limit would leave the curve pending for the keeper.
+            // Reverting here makes estimates include the graduation gas.
+            if (gasleft() < GRADUATION_GAS) revert InsufficientGas();
             try this.selfGraduate(token) {}
             catch (bytes memory reason) {
                 emit AutoGraduationFailed(token, reason);

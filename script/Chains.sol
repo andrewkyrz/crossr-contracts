@@ -48,23 +48,27 @@ library Chains {
         // ── testnets ──
         if (chainId == 46630) {
             // Robinhood testnet: v4 PoolManager observed at the mainnet address
-            return Info(46630, 40451, 0x3aCAAf60502791D199a5a5F0B173D78229eBFe32, 0x8366a39CC670B4001A1121B8F6A443A643e40951, 0.0168 ether, 0.042 ether);
+            return Info(46630, 40451, 0x3aCAAf60502791D199a5a5F0B173D78229eBFe32, 0x8366a39CC670B4001A1121B8F6A443A643e40951, 1.68 ether, 4.2 ether);
         }
         if (chainId == 11155111) {
-            return Info(11155111, 40161, 0x6EDCE65403992e310A62460808c4b910D972f10f, 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543, 0.0168 ether, 0.042 ether);
+            return Info(11155111, 40161, 0x6EDCE65403992e310A62460808c4b910D972f10f, 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543, 1.68 ether, 4.2 ether);
         }
         if (chainId == 84532) {
-            return Info(84532, 40245, 0x6EDCE65403992e310A62460808c4b910D972f10f, 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408, 0.0168 ether, 0.042 ether);
+            return Info(84532, 40245, 0x6EDCE65403992e310A62460808c4b910D972f10f, 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408, 1.68 ether, 4.2 ether);
         }
         if (chainId == 421614) {
-            return Info(421614, 40231, 0x6EDCE65403992e310A62460808c4b910D972f10f, 0xFB3e0C6F74eB1a21CC1Da29aeC80D2Dfe6C9a317, 0.0168 ether, 0.042 ether);
+            return Info(421614, 40231, 0x6EDCE65403992e310A62460808c4b910D972f10f, 0xFB3e0C6F74eB1a21CC1Da29aeC80D2Dfe6C9a317, 1.68 ether, 4.2 ether);
         }
         if (chainId == 1301) {
-            return Info(1301, 40333, 0xb8815f3f882614048CbE201a67eF9c6F10fe5035, 0x00B036B58a818B1BC34d502D3fE730Db729e62AC, 0.0168 ether, 0.042 ether);
+            return Info(1301, 40333, 0xb8815f3f882614048CbE201a67eF9c6F10fe5035, 0x00B036B58a818B1BC34d502D3fE730Db729e62AC, 1.68 ether, 4.2 ether);
+        }
+        if (chainId == 11155420) {
+            // OP Sepolia: LayerZero yes, no official Uniswap v4 — PoolManager deployed by crossr with DeployPoolManager.s.sol
+            return Info(11155420, 40232, 0x6EDCE65403992e310A62460808c4b910D972f10f, 0x88Fef25D904D2237DD5Df5B5daD534CAd8f60E61, 1.68 ether, 4.2 ether);
         }
         if (chainId == 97) {
             // BSC testnet: LayerZero yes, no official Uniswap v4 — set POOL_MANAGER env to a self-deployed one
-            return Info(97, 40102, 0x6EDCE65403992e310A62460808c4b910D972f10f, address(0), 0.06 ether, 0.15 ether);
+            return Info(97, 40102, 0x6EDCE65403992e310A62460808c4b910D972f10f, address(0), 6 ether, 15 ether);
         }
         return Info(uint64(chainId), 0, address(0), address(0), 1.68 ether, 4.2 ether);
     }

@@ -140,7 +140,12 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
         vm.chainId(CHAIN_A);
         vm.warp(block.timestamp + 10);
         vm.prank(alice);
-        bought = a.pad.buy{value: value}(tokenA, value, 0, alice, block.timestamp);
+        bought = _ld(a.pad.buy{value: value}(tokenA, value, 0, alice, block.timestamp));
+    }
+
+    /// Bridged amounts are rounded down to the shared 9-decimal precision.
+    function _ld(uint256 x) internal pure returns (uint256) {
+        return x - (x % 1e9);
     }
 
     /// Executes the next verified packet for `oapp` on `eid` through the real endpoint with unlimited gas
@@ -257,9 +262,9 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
         assertLt(relayGas * 3 / 2, RELAY_RECEIVE_GAS, "relay floor has < 1.5x margin");
 
         uint256 bought = _buyA(tokenA, 1 ether);
-        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, bob, bought, "").nativeFee;
+        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, _b32(bob), bought, "").nativeFee;
         vm.prank(alice);
-        bridgeA.send{value: feeA_}(EID_B, tokenA, bob, bought, "");
+        bridgeA.send{value: feeA_}(EID_B, tokenA, _b32(bob), bought, "");
         vm.chainId(CHAIN_B);
         uint256 bridgeGas = _measureReceive(EID_B, address(bridgeB));
         emit log_named_uint("bridge lzReceive gas (endpoint call)", bridgeGas);
@@ -274,12 +279,12 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
         address tokenB = b.pad.tokenOf(a.pad.manifestHash(m));
         uint256 bought = _buyA(tokenA, 1 ether);
 
-        MessagingFee memory fee = bridgeA.quoteSend(EID_B, tokenA, bob, bought / 2, "");
+        MessagingFee memory fee = bridgeA.quoteSend(EID_B, tokenA, _b32(bob), bought / 2, "");
         assertGt(fee.nativeFee, 0);
         assertEq(fee.lzTokenFee, 0);
         uint256 supplyA = LaunchToken(tokenA).totalSupply();
         vm.prank(alice);
-        bridgeA.send{value: fee.nativeFee}(EID_B, tokenA, bob, bought / 2, "");
+        bridgeA.send{value: fee.nativeFee}(EID_B, tokenA, _b32(bob), bought / 2, "");
         assertEq(LaunchToken(tokenA).totalSupply(), supplyA - bought / 2, "burned on A");
 
         vm.chainId(CHAIN_B);
@@ -294,13 +299,14 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
         (LaunchTypes.Manifest memory m, address tokenA) = _launchBoth(5_000);
         address tokenB = b.pad.tokenOf(a.pad.manifestHash(m));
         uint256 bought = _buyA(tokenA, 1 ether);
+        uint256 aliceA = LaunchToken(tokenA).balanceOf(alice); // includes the sub-1e9 dust `bought` drops
 
         // two sends A→B: nonces 1 and 2, both delivered in order by one verifyPackets call
         vm.startPrank(alice);
-        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, alice, 100, "").nativeFee;
-        bridgeA.send{value: feeA_}(EID_B, tokenA, alice, 100, "");
-        uint256 feeA2_ = bridgeA.quoteSend(EID_B, tokenA, alice, 200, "").nativeFee;
-        bridgeA.send{value: feeA2_}(EID_B, tokenA, alice, 200, "");
+        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, _b32(alice), 100e9, "").nativeFee;
+        bridgeA.send{value: feeA_}(EID_B, tokenA, _b32(alice), 100e9, "");
+        uint256 feeA2_ = bridgeA.quoteSend(EID_B, tokenA, _b32(alice), 200e9, "").nativeFee;
+        bridgeA.send{value: feeA2_}(EID_B, tokenA, _b32(alice), 200e9, "");
         vm.stopPrank();
         assertEq(
             ILayerZeroEndpointV2(endpoints[EID_A])
@@ -309,7 +315,7 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
         );
         vm.chainId(CHAIN_B);
         verifyPackets(EID_B, address(bridgeB));
-        assertEq(LaunchToken(tokenB).balanceOf(alice), 300);
+        assertEq(LaunchToken(tokenB).balanceOf(alice), 300e9);
         assertEq(
             ILayerZeroEndpointV2(endpoints[EID_B])
                 .inboundNonce(address(bridgeB), EID_A, _b32(address(bridgeA))),
@@ -317,14 +323,14 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
         );
 
         // and back B→A on the other channel
-        uint256 feeB_ = bridgeB.quoteSend(EID_A, tokenB, bob, 300, "").nativeFee;
+        uint256 feeB_ = bridgeB.quoteSend(EID_A, tokenB, _b32(bob), 300e9, "").nativeFee;
         vm.prank(alice);
-        bridgeB.send{value: feeB_}(EID_A, tokenB, bob, 300, "");
+        bridgeB.send{value: feeB_}(EID_A, tokenB, _b32(bob), 300e9, "");
         assertEq(LaunchToken(tokenB).balanceOf(alice), 0);
         vm.chainId(CHAIN_A);
         verifyPackets(EID_A, address(bridgeA));
-        assertEq(LaunchToken(tokenA).balanceOf(bob), 300);
-        assertEq(LaunchToken(tokenA).balanceOf(alice), bought - 300);
+        assertEq(LaunchToken(tokenA).balanceOf(bob), 300e9);
+        assertEq(LaunchToken(tokenA).balanceOf(alice), aliceA - 300e9);
         assertEq(LaunchToken(tokenA).totalSupply() + LaunchToken(tokenB).totalSupply(), SUPPLY);
     }
 
@@ -337,9 +343,9 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
         vm.prank(creator);
         address tokenA = a.pad.createLaunch{value: fee}(m, 0, noRelays(), 0, 0);
         uint256 bought = _buyA(tokenA, 1 ether);
-        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, bob, bought, "").nativeFee;
+        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, _b32(bob), bought, "").nativeFee;
         vm.prank(alice);
-        bridgeA.send{value: feeA_}(EID_B, tokenA, bob, bought, "");
+        bridgeA.send{value: feeA_}(EID_B, tokenA, _b32(bob), bought, "");
 
         vm.chainId(CHAIN_B);
         vm.expectRevert(TokenBridge.NotLaunchToken.selector);
@@ -358,9 +364,9 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
     function test_lz_bridge_rejectsUnknownPeer() public {
         (, address tokenA) = _launchBoth(5_000);
         uint256 bought = _buyA(tokenA, 1 ether);
-        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, bob, bought, "").nativeFee;
+        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, _b32(bob), bought, "").nativeFee;
         vm.prank(alice);
-        bridgeA.send{value: feeA_}(EID_B, tokenA, bob, bought, "");
+        bridgeA.send{value: feeA_}(EID_B, tokenA, _b32(bob), bought, "");
 
         vm.chainId(CHAIN_B);
         bridgeB.setPeer(EID_A, _b32(address(0xDEAD)));
@@ -372,9 +378,9 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
         (LaunchTypes.Manifest memory m, address tokenA) = _launchBoth(5_000);
         address tokenB = b.pad.tokenOf(a.pad.manifestHash(m));
         uint256 bought = _buyA(tokenA, 1 ether);
-        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, bob, bought, "").nativeFee;
+        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, _b32(bob), bought, "").nativeFee;
         vm.prank(alice);
-        bridgeA.send{value: feeA_}(EID_B, tokenA, bob, bought, "");
+        bridgeA.send{value: feeA_}(EID_B, tokenA, _b32(bob), bought, "");
 
         vm.chainId(CHAIN_B);
         bridgeB.pause();
@@ -404,11 +410,11 @@ contract CrossChainLzTest is LaunchpadTestBase, TestHelperOz5 {
         assertEq(uint8(b.pad.getCurve(tokenB).status), uint8(LaunchTypes.Status.Graduated));
 
         // bridging keeps working after graduation on both sides
-        uint256 bal = LaunchToken(tokenA).balanceOf(alice);
+        uint256 bal = _ld(LaunchToken(tokenA).balanceOf(alice));
         vm.chainId(CHAIN_A);
-        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, alice, bal, "").nativeFee;
+        uint256 feeA_ = bridgeA.quoteSend(EID_B, tokenA, _b32(alice), bal, "").nativeFee;
         vm.prank(alice);
-        bridgeA.send{value: feeA_}(EID_B, tokenA, alice, bal, "");
+        bridgeA.send{value: feeA_}(EID_B, tokenA, _b32(alice), bal, "");
         vm.chainId(CHAIN_B);
         verifyPackets(EID_B, address(bridgeB));
         assertEq(LaunchToken(tokenB).balanceOf(alice), bal);

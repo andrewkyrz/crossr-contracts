@@ -127,7 +127,7 @@ contract Deploy is Script {
         string memory j = "deployment";
         j.serialize("chainId", chainId);
         j.serialize("lzEid", uint256(lzEid));
-        j.serialize("block", block.number);
+        j.serialize("block", _l2BlockNumber());
         j.serialize("factory", factory);
         j.serialize("escrow", escrow);
         j.serialize("locker", locker);
@@ -140,5 +140,13 @@ contract Deploy is Script {
         string memory path = string.concat(vm.projectRoot(), "/deployments/", vm.toString(chainId), ".json");
         vm.writeJson(out, path);
         console2.log("wrote", path);
+    }
+
+    /// Arbitrum-family chains (Arbitrum, Orbit chains such as Robinhood Chain) return the parent chain's height from
+    /// `block.number`; the indexer needs the chain's own height, which the ArbSys precompile reports.
+    function _l2BlockNumber() internal view returns (uint256) {
+        (bool ok, bytes memory data) = address(0x64).staticcall(abi.encodeWithSignature("arbBlockNumber()"));
+        if (ok && data.length == 32) return abi.decode(data, (uint256));
+        return block.number;
     }
 }

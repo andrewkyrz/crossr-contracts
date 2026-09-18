@@ -36,25 +36,29 @@ contract Simulate is Script {
         m.legs[0] = LaunchTypes.Leg({chainId: uint64(block.chainid), quote: address(0), allocationBps: 10_000});
         Launchpad.RelaySpec[] memory relays = new Launchpad.RelaySpec[](0);
 
+        // trade sizes scale with the chain's graduation target (4.2 ETH locally, 0.042 ETH on testnets)
+        (, , uint128 target) = pad.quoteConfigs(address(0));
+        uint256 u = uint256(target) / 42; // 0.1 ETH locally
+
         vm.startBroadcast(pk);
-        address token = pad.createLaunch{value: pad.creationFee() + 0.05 ether}(m, 0, relays, 0.05 ether, 0);
+        address token = pad.createLaunch{value: pad.creationFee() + u / 2}(m, 0, relays, u / 2, 0);
         console2.log("token", token);
-        pad.buy{value: 0.2 ether}(token, 0.2 ether, 0, me, block.timestamp + 1 hours);
-        pad.buy{value: 0.5 ether}(token, 0.5 ether, 0, me, block.timestamp + 1 hours);
+        pad.buy{value: 2 * u}(token, 2 * u, 0, me, block.timestamp + 1 hours);
+        pad.buy{value: 5 * u}(token, 5 * u, 0, me, block.timestamp + 1 hours);
         uint256 bal = LaunchToken(token).balanceOf(me);
         LaunchToken(token).approve(address(pad), bal / 4);
         pad.sell(token, bal / 4, 0, me, block.timestamp + 1 hours);
         if (graduate) {
-            pad.buy{value: 6 ether}(token, 6 ether, 0, me, block.timestamp + 1 hours);
+            pad.buy{value: 60 * u}(token, 60 * u, 0, me, block.timestamp + 1 hours);
             // one post-graduation swap through the local test router so hook fees show up
             if (vm.keyExistsJson(local, ".swapRouter")) {
                 PoolSwapTest router = PoolSwapTest(local.readAddress(".swapRouter"));
                 LiquidityLocker locker = LiquidityLocker(payable(local.readAddress(".locker")));
                 LiquidityLocker.Position memory p = locker.position(token);
                 bool ethIs0 = Currency.unwrap(p.key.currency0) == address(0);
-                router.swap{value: 0.1 ether}(
+                router.swap{value: u}(
                     p.key,
-                    SwapParams({zeroForOne: ethIs0, amountSpecified: -0.1 ether, sqrtPriceLimitX96: ethIs0 ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1}),
+                    SwapParams({zeroForOne: ethIs0, amountSpecified: -int256(u), sqrtPriceLimitX96: ethIs0 ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1}),
                     PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
                     ""
                 );
